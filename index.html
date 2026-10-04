@@ -2,128 +2,548 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Малювання лазером</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Laser Draw</title>
+
 <style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}
-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover}
-canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
-#menu{position:fixed;top:10px;left:10px;z-index:5}
-button{font-size:17px;padding:10px;border:0;border-radius:10px}
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#000;
+}
+
+video{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+canvas{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+}
+
+#buttons{
+  position:fixed;
+  top:10px;
+  left:10px;
+  z-index:10;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+button{
+  padding:10px 14px;
+  font-size:16px;
+  border:0;
+  border-radius:10px;
+}
+
+#info{
+  position:fixed;
+  bottom:15px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#000b;
+  color:white;
+  padding:10px 15px;
+  border-radius:10px;
+  z-index:10;
+  text-align:center;
+}
+
+.point{
+  position:fixed;
+  width:28px;
+  height:28px;
+  margin:-14px;
+  border-radius:50%;
+  background:#00ffff;
+  box-shadow:0 0 20px #00ffff;
+  z-index:8;
+}
+
+#p1{left:5%;top:5%}
+#p2{right:5%;top:5%}
+#p3{right:5%;bottom:5%}
+#p4{left:5%;bottom:5%}
+
+.hidden{
+  display:none;
+}
 </style>
 </head>
 
 <body>
 
 <video id="camera" autoplay playsinline></video>
-<canvas id="screen"></canvas>
 
-<div id="menu">
-<button onclick="startCamera()">📷 Камера</button>
-<button onclick="clearDraw()">🗑 Очистити</button>
-</div>
+<canvas id="draw"></canvas>
 
 <canvas id="scan" width="320" height="240" hidden></canvas>
 
+<div id="buttons">
+<button onclick="startCamera()">📷 Камера</button>
+<button onclick="calibrate()">🎯 Калібрування</button>
+<button onclick="clearDraw()">🗑 Очистити</button>
+</div>
+
+<div id="info">
+Спочатку увімкни камеру
+</div>
+
+<div id="p1" class="point hidden"></div>
+<div id="p2" class="point hidden"></div>
+<div id="p3" class="point hidden"></div>
+<div id="p4" class="point hidden"></div>
+
 <script>
+
 const camera=document.getElementById("camera");
-const screen=document.getElementById("screen");
-const ctx=screen.getContext("2d");
+const draw=document.getElementById("draw");
+const ctx=draw.getContext("2d");
+
 const scan=document.getElementById("scan");
 const sctx=scan.getContext("2d");
 
-let oldX=null;
-let oldY=null;
+const info=document.getElementById("info");
+
+let cameraRunning=false;
+let calibrated=false;
+
+let corners={
+  tl:null,
+  tr:null,
+  br:null,
+  bl:null
+};
+
+let lastX=null;
+let lastY=null;
+
+
+/* Розмір полотна */
 
 function resize(){
- screen.width=innerWidth;
- screen.height=innerHeight;
- ctx.lineWidth=5;
- ctx.lineCap="round";
- ctx.strokeStyle="red";
+
+  draw.width=innerWidth;
+  draw.height=innerHeight;
+
+  ctx.lineWidth=5;
+  ctx.lineCap="round";
+  ctx.lineJoin="round";
+  ctx.strokeStyle="red";
 }
+
 resize();
-window.onresize=resize;
+
+window.addEventListener("resize",resize);
+
+
+/* Камера */
 
 async function startCamera(){
- try{
-  const stream=await navigator.mediaDevices.getUserMedia({
-   video:{facingMode:{ideal:"environment"}},
-   audio:false
+
+  try{
+
+    const stream=await navigator.mediaDevices.getUserMedia({
+
+      video:{
+        facingMode:{ideal:"environment"},
+        width:{ideal:1280},
+        height:{ideal:720}
+      },
+
+      audio:false
+
+    });
+
+    camera.srcObject=stream;
+
+    cameraRunning=true;
+
+    info.textContent="Камера працює. Натисни 🎯 Калібрування";
+
+    camera.onloadedmetadata=()=>{
+
+      camera.play();
+
+      scanLaser();
+
+    };
+
+  }catch(error){
+
+    info.textContent="❌ Немає доступу до камери";
+
+    alert("Дозволь Chrome доступ до камери.");
+
+  }
+
+}
+
+
+/* Показати точки */
+
+function showPoints(){
+
+  document.querySelectorAll(".point")
+    .forEach(p=>p.classList.remove("hidden"));
+
+}
+
+
+/* Сховати точки */
+
+function hidePoints(){
+
+  document.querySelectorAll(".point")
+    .forEach(p=>p.classList.add("hidden"));
+
+}
+
+
+/* Калібрування */
+
+async function calibrate(){
+
+  if(!cameraRunning){
+
+    alert("Спочатку увімкни камеру.");
+
+    return;
+
+  }
+
+  calibrated=false;
+
+  lastX=null;
+  lastY=null;
+
+  showPoints();
+
+  info.textContent=
+    "Калібрування: наведи лазер на 🔵 точки по черзі";
+
+  await waitPoint("tl","Верхня ліва точка");
+
+  await waitPoint("tr","Верхня права точка");
+
+  await waitPoint("br","Нижня права точка");
+
+  await waitPoint("bl","Нижня ліва точка");
+
+  calibrated=true;
+
+  hidePoints();
+
+  info.textContent="✅ Калібрування завершено! Наведи 🔴 лазер на екран.";
+
+}
+
+
+/* Очікування точки */
+
+function waitPoint(name,text){
+
+  return new Promise(resolve=>{
+
+    info.textContent=text;
+
+    let timer=setInterval(()=>{
+
+      const laser=findLaserPosition();
+
+      if(!laser) return;
+
+      const target=getTarget(name);
+
+      const distance=Math.hypot(
+        laser.x-target.x,
+        laser.y-target.y
+      );
+
+      if(distance<70){
+
+        corners[name]={
+          x:laser.x,
+          y:laser.y
+        };
+
+        clearInterval(timer);
+
+        resolve();
+
+      }
+
+    },80);
+
   });
 
-  camera.srcObject=stream;
-  camera.onloadedmetadata=()=>{
-   camera.play();
-   findLaser();
+}
+
+
+/* Координати видимої точки */
+
+function getTarget(name){
+
+  const margin=0.05;
+
+  if(name==="tl")
+    return {
+      x:innerWidth*margin,
+      y:innerHeight*margin
+    };
+
+  if(name==="tr")
+    return {
+      x:innerWidth*(1-margin),
+      y:innerHeight*margin
+    };
+
+  if(name==="br")
+    return {
+      x:innerWidth*(1-margin),
+      y:innerHeight*(1-margin)
+    };
+
+  return {
+    x:innerWidth*margin,
+    y:innerHeight*(1-margin)
   };
- }catch(e){
-  alert("Дозволь Chrome доступ до камери.");
- }
+
 }
 
-function findLaser(){
 
- if(camera.readyState<2){
-  requestAnimationFrame(findLaser);
-  return;
- }
+/* Пошук червоного лазера */
 
- sctx.drawImage(camera,0,0,320,240);
+function findLaserPosition(){
 
- const pixels=sctx.getImageData(0,0,320,240).data;
+  if(camera.readyState<2)
+    return null;
 
- let totalX=0;
- let totalY=0;
- let points=0;
+  const W=320;
+  const H=240;
 
- for(let y=0;y<240;y++){
-  for(let x=0;x<320;x++){
+  sctx.drawImage(
+    camera,
+    0,0,
+    W,H
+  );
 
-   let i=(y*320+x)*4;
+  const pixels=sctx.getImageData(
+    0,0,W,H
+  ).data;
 
-   let r=pixels[i];
-   let g=pixels[i+1];
-   let b=pixels[i+2];
+  let totalX=0;
+  let totalY=0;
+  let count=0;
 
-   if(r>180 && r>g*1.5 && r>b*1.5){
-    totalX+=x;
-    totalY+=y;
-    points++;
-   }
+  for(let y=0;y<H;y++){
+
+    for(let x=0;x<W;x++){
+
+      const i=(y*W+x)*4;
+
+      const r=pixels[i];
+      const g=pixels[i+1];
+      const b=pixels[i+2];
+
+      /* Червона яскрава точка */
+
+      if(
+        r>180 &&
+        r>g*1.6 &&
+        r>b*1.6 &&
+        r-g>60
+      ){
+
+        totalX+=x;
+        totalY+=y;
+        count++;
+
+      }
+
+    }
+
   }
- }
 
- if(points>0){
+  if(count<2)
+    return null;
 
-  let x=(totalX/points)/320*screen.width;
-  let y=(totalY/points)/240*screen.height;
+  return {
 
-  if(oldX!==null){
+    x:(totalX/count)/W*innerWidth,
 
-   ctx.beginPath();
-   ctx.moveTo(oldX,oldY);
-   ctx.lineTo(x,y);
-   ctx.stroke();
-  }
+    y:(totalY/count)/H*innerHeight
 
-  oldX=x;
-  oldY=y;
+  };
 
- }else{
-
-  oldX=null;
-  oldY=null;
- }
-
- requestAnimationFrame(findLaser);
 }
+
+
+/* Перспективне перетворення */
+
+function transformPoint(p){
+
+  /*
+    Спрощене 4-точкове
+    перспективне перетворення.
+  */
+
+  const topLeft=corners.tl;
+  const topRight=corners.tr;
+  const bottomRight=corners.br;
+  const bottomLeft=corners.bl;
+
+  const topWidth=
+    Math.hypot(
+      topRight.x-topLeft.x,
+      topRight.y-topLeft.y
+    );
+
+  const bottomWidth=
+    Math.hypot(
+      bottomRight.x-bottomLeft.x,
+      bottomRight.y-bottomLeft.y
+    );
+
+  const leftHeight=
+    Math.hypot(
+      bottomLeft.x-topLeft.x,
+      bottomLeft.y-topLeft.y
+    );
+
+  const rightHeight=
+    Math.hypot(
+      bottomRight.x-topRight.x,
+      bottomRight.y-topRight.y
+    );
+
+  const minX=Math.min(
+    topLeft.x,
+    bottomLeft.x
+  );
+
+  const maxX=Math.max(
+    topRight.x,
+    bottomRight.x
+  );
+
+  const minY=Math.min(
+    topLeft.y,
+    topRight.y
+  );
+
+  const maxY=Math.max(
+    bottomLeft.y,
+    bottomRight.y
+  );
+
+  const nx=
+    (p.x-minX)/
+    Math.max(1,maxX-minX);
+
+  const ny=
+    (p.y-minY)/
+    Math.max(1,maxY-minY);
+
+  return {
+
+    x:nx*innerWidth,
+
+    y:ny*innerHeight
+
+  };
+
+}
+
+
+/* Основний пошук лазера */
+
+function scanLaser(){
+
+  if(!cameraRunning){
+
+    requestAnimationFrame(scanLaser);
+
+    return;
+
+  }
+
+  const laser=findLaserPosition();
+
+  if(laser && calibrated){
+
+    const p=transformPoint(laser);
+
+    if(lastX!==null){
+
+      const distance=
+        Math.hypot(
+          p.x-lastX,
+          p.y-lastY
+        );
+
+      if(distance<100){
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+          lastX,
+          lastY
+        );
+
+        ctx.lineTo(
+          p.x,
+          p.y
+        );
+
+        ctx.stroke();
+
+      }
+
+    }
+
+    lastX=p.x;
+    lastY=p.y;
+
+  }else{
+
+    lastX=null;
+    lastY=null;
+
+  }
+
+  requestAnimationFrame(scanLaser);
+
+}
+
+
+/* Очистити */
 
 function clearDraw(){
- ctx.clearRect(0,0,screen.width,screen.height);
- oldX=null;
- oldY=null;
+
+  ctx.clearRect(
+    0,
+    0,
+    draw.width,
+    draw.height
+  );
+
+  lastX=null;
+  lastY=null;
+
 }
+
 </script>
 
 </body>
