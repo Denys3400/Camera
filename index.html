@@ -1,1 +1,130 @@
-<!doctype html><html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Малювання камерою</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;font-family:Arial}video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover}canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none}#bar{position:fixed;top:10px;left:10px;right:10px;z-index:5;display:flex;gap:8px;align-items:center}button{font-size:16px;padding:9px 12px;border:0;border-radius:10px}#status{color:white;background:#0009;padding:8px;border-radius:10px}</style></head><body><video id="cam" autoplay playsinline></video><canvas id="draw"></canvas><div id="bar"><button id="start">📷 Увімкнути камеру</button><button id="clear">Очистити</button><span id="status">Камера вимкнена</span></div><script>const v=document.getElementById('cam'),c=document.getElementById('draw'),x=c.getContext('2d');function size(){c.width=innerWidth*devicePixelRatio;c.height=innerHeight*devicePixelRatio;x.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);x.lineWidth=5;x.lineCap='round';x.strokeStyle='red'}addEventListener('resize',size);size();let down=false;c.addEventListener('pointerdown',e=>{down=true;x.beginPath();x.moveTo(e.clientX,e.clientY)});c.addEventListener('pointermove',e=>{if(!down)return;x.lineTo(e.clientX,e.clientY);x.stroke()});addEventListener('pointerup',()=>down=false);document.getElementById('clear').onclick=()=>x.clearRect(0,0,innerWidth,innerHeight);document.getElementById('start').onclick=async()=>{try{const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});v.srcObject=s;document.getElementById('status').textContent='Камера працює ✅'}catch(e){document.getElementById('status').textContent='Немає доступу до камери ❌';alert('Дозволь Chrome доступ до камери. Сторінка має бути відкрита через HTTPS.')}};</script></body></html>
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Малювання лазером</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}
+video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover}
+canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+#menu{position:fixed;top:10px;left:10px;z-index:5}
+button{font-size:17px;padding:10px;border:0;border-radius:10px}
+</style>
+</head>
+
+<body>
+
+<video id="camera" autoplay playsinline></video>
+<canvas id="screen"></canvas>
+
+<div id="menu">
+<button onclick="startCamera()">📷 Камера</button>
+<button onclick="clearDraw()">🗑 Очистити</button>
+</div>
+
+<canvas id="scan" width="320" height="240" hidden></canvas>
+
+<script>
+const camera=document.getElementById("camera");
+const screen=document.getElementById("screen");
+const ctx=screen.getContext("2d");
+const scan=document.getElementById("scan");
+const sctx=scan.getContext("2d");
+
+let oldX=null;
+let oldY=null;
+
+function resize(){
+ screen.width=innerWidth;
+ screen.height=innerHeight;
+ ctx.lineWidth=5;
+ ctx.lineCap="round";
+ ctx.strokeStyle="red";
+}
+resize();
+window.onresize=resize;
+
+async function startCamera(){
+ try{
+  const stream=await navigator.mediaDevices.getUserMedia({
+   video:{facingMode:{ideal:"environment"}},
+   audio:false
+  });
+
+  camera.srcObject=stream;
+  camera.onloadedmetadata=()=>{
+   camera.play();
+   findLaser();
+  };
+ }catch(e){
+  alert("Дозволь Chrome доступ до камери.");
+ }
+}
+
+function findLaser(){
+
+ if(camera.readyState<2){
+  requestAnimationFrame(findLaser);
+  return;
+ }
+
+ sctx.drawImage(camera,0,0,320,240);
+
+ const pixels=sctx.getImageData(0,0,320,240).data;
+
+ let totalX=0;
+ let totalY=0;
+ let points=0;
+
+ for(let y=0;y<240;y++){
+  for(let x=0;x<320;x++){
+
+   let i=(y*320+x)*4;
+
+   let r=pixels[i];
+   let g=pixels[i+1];
+   let b=pixels[i+2];
+
+   if(r>180 && r>g*1.5 && r>b*1.5){
+    totalX+=x;
+    totalY+=y;
+    points++;
+   }
+  }
+ }
+
+ if(points>0){
+
+  let x=(totalX/points)/320*screen.width;
+  let y=(totalY/points)/240*screen.height;
+
+  if(oldX!==null){
+
+   ctx.beginPath();
+   ctx.moveTo(oldX,oldY);
+   ctx.lineTo(x,y);
+   ctx.stroke();
+  }
+
+  oldX=x;
+  oldY=y;
+
+ }else{
+
+  oldX=null;
+  oldY=null;
+ }
+
+ requestAnimationFrame(findLaser);
+}
+
+function clearDraw(){
+ ctx.clearRect(0,0,screen.width,screen.height);
+ oldX=null;
+ oldY=null;
+}
+</script>
+
+</body>
+</html>
