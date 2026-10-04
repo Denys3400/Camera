@@ -14,12 +14,13 @@ html,body{
   background:#000;
 }
 
+/* Камера працює, але відео НЕ видно */
 video{
   position:fixed;
-  inset:0;
-  width:100%;
-  height:100%;
-  object-fit:cover;
+  width:1px;
+  height:1px;
+  opacity:0;
+  pointer-events:none;
 }
 
 canvas{
@@ -87,7 +88,6 @@ button{
 <video id="camera" autoplay playsinline></video>
 
 <canvas id="draw"></canvas>
-
 <canvas id="scan" width="320" height="240" hidden></canvas>
 
 <div id="buttons">
@@ -130,7 +130,7 @@ let lastX=null;
 let lastY=null;
 
 
-/* Розмір полотна */
+/* Розмір малювання */
 
 function resize(){
 
@@ -148,7 +148,7 @@ resize();
 window.addEventListener("resize",resize);
 
 
-/* Камера */
+/* Увімкнення камери */
 
 async function startCamera(){
 
@@ -170,43 +170,49 @@ async function startCamera(){
 
     cameraRunning=true;
 
-    info.textContent="Камера працює. Натисни 🎯 Калібрування";
+    info.textContent=
+      "Камера працює. Натисни 🎯 Калібрування";
 
     camera.onloadedmetadata=()=>{
 
       camera.play();
 
-      scanLaser();
-
     };
 
   }catch(error){
 
-    info.textContent="❌ Немає доступу до камери";
+    info.textContent=
+      "❌ Немає доступу до камери";
 
-    alert("Дозволь Chrome доступ до камери.");
+    alert(
+      "Дозволь Chrome доступ до камери."
+    );
 
   }
 
 }
 
 
-/* Показати точки */
+/* Показати 4 точки */
 
 function showPoints(){
 
   document.querySelectorAll(".point")
-    .forEach(p=>p.classList.remove("hidden"));
+    .forEach(p=>{
+      p.classList.remove("hidden");
+    });
 
 }
 
 
-/* Сховати точки */
+/* Сховати 4 точки */
 
 function hidePoints(){
 
   document.querySelectorAll(".point")
-    .forEach(p=>p.classList.add("hidden"));
+    .forEach(p=>{
+      p.classList.add("hidden");
+    });
 
 }
 
@@ -217,7 +223,9 @@ async function calibrate(){
 
   if(!cameraRunning){
 
-    alert("Спочатку увімкни камеру.");
+    alert(
+      "Спочатку натисни 📷 Камера"
+    );
 
     return;
 
@@ -231,38 +239,46 @@ async function calibrate(){
   showPoints();
 
   info.textContent=
-    "Калібрування: наведи лазер на 🔵 точки по черзі";
+    "Наведи лазер на верхню ліву 🔵 точку";
 
-  await waitPoint("tl","Верхня ліва точка");
+  corners.tl=await waitForLaser("tl");
 
-  await waitPoint("tr","Верхня права точка");
+  info.textContent=
+    "Наведи лазер на верхню праву 🔵 точку";
 
-  await waitPoint("br","Нижня права точка");
+  corners.tr=await waitForLaser("tr");
 
-  await waitPoint("bl","Нижня ліва точка");
+  info.textContent=
+    "Наведи лазер на нижню праву 🔵 точку";
+
+  corners.br=await waitForLaser("br");
+
+  info.textContent=
+    "Наведи лазер на нижню ліву 🔵 точку";
+
+  corners.bl=await waitForLaser("bl");
 
   calibrated=true;
 
   hidePoints();
 
-  info.textContent="✅ Калібрування завершено! Наведи 🔴 лазер на екран.";
+  info.textContent=
+    "✅ Готово! Тепер малюй лазером 🔴";
 
 }
 
 
-/* Очікування точки */
+/* Очікування лазера */
 
-function waitPoint(name,text){
+function waitForLaser(name){
 
   return new Promise(resolve=>{
 
-    info.textContent=text;
+    const timer=setInterval(()=>{
 
-    let timer=setInterval(()=>{
+      const laser=findLaser();
 
-      const laser=findLaserPosition();
-
-      if(!laser) return;
+      if(!laser)return;
 
       const target=getTarget(name);
 
@@ -271,16 +287,14 @@ function waitPoint(name,text){
         laser.y-target.y
       );
 
-      if(distance<70){
-
-        corners[name]={
-          x:laser.x,
-          y:laser.y
-        };
+      if(distance<80){
 
         clearInterval(timer);
 
-        resolve();
+        resolve({
+          x:laser.x,
+          y:laser.y
+        });
 
       }
 
@@ -291,41 +305,50 @@ function waitPoint(name,text){
 }
 
 
-/* Координати видимої точки */
+/* Координати блакитних точок */
 
 function getTarget(name){
 
-  const margin=0.05;
+  const m=0.05;
 
-  if(name==="tl")
+  if(name==="tl"){
+
     return {
-      x:innerWidth*margin,
-      y:innerHeight*margin
+      x:innerWidth*m,
+      y:innerHeight*m
     };
 
-  if(name==="tr")
+  }
+
+  if(name==="tr"){
+
     return {
-      x:innerWidth*(1-margin),
-      y:innerHeight*margin
+      x:innerWidth*(1-m),
+      y:innerHeight*m
     };
 
-  if(name==="br")
+  }
+
+  if(name==="br"){
+
     return {
-      x:innerWidth*(1-margin),
-      y:innerHeight*(1-margin)
+      x:innerWidth*(1-m),
+      y:innerHeight*(1-m)
     };
+
+  }
 
   return {
-    x:innerWidth*margin,
-    y:innerHeight*(1-margin)
+    x:innerWidth*m,
+    y:innerHeight*(1-m)
   };
 
 }
 
 
-/* Пошук червоного лазера */
+/* Пошук червоної точки лазера */
 
-function findLaserPosition(){
+function findLaser(){
 
   if(camera.readyState<2)
     return null;
@@ -335,12 +358,17 @@ function findLaserPosition(){
 
   sctx.drawImage(
     camera,
-    0,0,
-    W,H
+    0,
+    0,
+    W,
+    H
   );
 
   const pixels=sctx.getImageData(
-    0,0,W,H
+    0,
+    0,
+    W,
+    H
   ).data;
 
   let totalX=0;
@@ -357,7 +385,9 @@ function findLaserPosition(){
       const g=pixels[i+1];
       const b=pixels[i+2];
 
-      /* Червона яскрава точка */
+      /*
+        Шукаємо яскраво-червоний лазер
+      */
 
       if(
         r>180 &&
@@ -390,136 +420,127 @@ function findLaserPosition(){
 }
 
 
-/* Перспективне перетворення */
+/* Перетворення координат */
 
 function transformPoint(p){
 
+  const tl=corners.tl;
+  const tr=corners.tr;
+  const br=corners.br;
+  const bl=corners.bl;
+
   /*
-    Спрощене 4-точкове
-    перспективне перетворення.
+    Нормалізація відносно
+    чотирьох точок.
   */
 
-  const topLeft=corners.tl;
-  const topRight=corners.tr;
-  const bottomRight=corners.br;
-  const bottomLeft=corners.bl;
+  const topWidth=Math.hypot(
+    tr.x-tl.x,
+    tr.y-tl.y
+  );
 
-  const topWidth=
-    Math.hypot(
-      topRight.x-topLeft.x,
-      topRight.y-topLeft.y
-    );
+  const bottomWidth=Math.hypot(
+    br.x-bl.x,
+    br.y-bl.y
+  );
 
-  const bottomWidth=
-    Math.hypot(
-      bottomRight.x-bottomLeft.x,
-      bottomRight.y-bottomLeft.y
-    );
+  const leftHeight=Math.hypot(
+    bl.x-tl.x,
+    bl.y-tl.y
+  );
 
-  const leftHeight=
-    Math.hypot(
-      bottomLeft.x-topLeft.x,
-      bottomLeft.y-topLeft.y
-    );
-
-  const rightHeight=
-    Math.hypot(
-      bottomRight.x-topRight.x,
-      bottomRight.y-topRight.y
-    );
+  const rightHeight=Math.hypot(
+    br.x-tr.x,
+    br.y-tr.y
+  );
 
   const minX=Math.min(
-    topLeft.x,
-    bottomLeft.x
+    tl.x,
+    bl.x
   );
 
   const maxX=Math.max(
-    topRight.x,
-    bottomRight.x
+    tr.x,
+    br.x
   );
 
   const minY=Math.min(
-    topLeft.y,
-    topRight.y
+    tl.y,
+    tr.y
   );
 
   const maxY=Math.max(
-    bottomLeft.y,
-    bottomRight.y
+    bl.y,
+    br.y
   );
 
-  const nx=
+  let nx=
     (p.x-minX)/
     Math.max(1,maxX-minX);
 
-  const ny=
+  let ny=
     (p.y-minY)/
     Math.max(1,maxY-minY);
 
+  nx=Math.max(0,Math.min(1,nx));
+  ny=Math.max(0,Math.min(1,ny));
+
   return {
-
     x:nx*innerWidth,
-
     y:ny*innerHeight
-
   };
 
 }
 
 
-/* Основний пошук лазера */
+/* Малювання лазером */
 
 function scanLaser(){
 
-  if(!cameraRunning){
+  if(cameraRunning){
 
-    requestAnimationFrame(scanLaser);
+    const laser=findLaser();
 
-    return;
+    if(laser && calibrated){
 
-  }
+      const p=transformPoint(laser);
 
-  const laser=findLaserPosition();
+      if(lastX!==null){
 
-  if(laser && calibrated){
-
-    const p=transformPoint(laser);
-
-    if(lastX!==null){
-
-      const distance=
-        Math.hypot(
+        const distance=Math.hypot(
           p.x-lastX,
           p.y-lastY
         );
 
-      if(distance<100){
+        if(distance<100){
 
-        ctx.beginPath();
+          ctx.beginPath();
 
-        ctx.moveTo(
-          lastX,
-          lastY
-        );
+          ctx.moveTo(
+            lastX,
+            lastY
+          );
 
-        ctx.lineTo(
-          p.x,
-          p.y
-        );
+          ctx.lineTo(
+            p.x,
+            p.y
+          );
 
-        ctx.stroke();
+          ctx.stroke();
+
+        }
 
       }
 
+      lastX=p.x;
+      lastY=p.y;
+
+    }else{
+
+      lastX=null;
+      lastY=null;
+
     }
-
-    lastX=p.x;
-    lastY=p.y;
-
-  }else{
-
-    lastX=null;
-    lastY=null;
 
   }
 
@@ -528,7 +549,7 @@ function scanLaser(){
 }
 
 
-/* Очистити */
+/* Очистити малюнок */
 
 function clearDraw(){
 
@@ -543,6 +564,11 @@ function clearDraw(){
   lastY=null;
 
 }
+
+
+/* Запускаємо пошук лазера */
+
+requestAnimationFrame(scanLaser);
 
 </script>
 
