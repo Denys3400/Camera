@@ -2,301 +2,207 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 
 <title>Laser Draw</title>
 
 <style>
-
 * {
     box-sizing: border-box;
 }
 
-html, body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #24113d;
+html,body {
+    margin:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#24113d;
 }
 
 /* Полотно */
 #canvas {
-    position: fixed;
-    inset: 0;
-
-    width: 100vw;
-    height: 100vh;
-
-    z-index: 2;
-
-    pointer-events: none;
+    position:fixed;
+    inset:0;
+    width:100vw;
+    height:100vh;
+    z-index:2;
+    pointer-events:none;
 }
 
-
-/* =================================
-   ПЕРЕГЛЯД КАМЕРИ
-   ================================= */
-
-#cameraPreview {
-
-    position: fixed;
-
-    left: 50%;
-    top: 50%;
-
-    transform: translate(-50%, -50%);
-
-    width: 90vw;
-    height: 70vh;
-
-    object-fit: contain;
-
-    background: black;
-
-    z-index: 5;
-
-    display: none;
-}
-
-
-/* =================================
-   ПРИХОВАНИЙ VIDEO
-   ================================= */
-
+/* Прихована камера */
 #video {
-
-    position: fixed;
-
-    width: 1px;
-    height: 1px;
-
-    opacity: 0;
-
-    pointer-events: none;
+    position:fixed;
+    width:1px;
+    height:1px;
+    opacity:0;
+    pointer-events:none;
 }
 
+/* Перегляд камери */
+#preview {
+    position:fixed;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
 
-/* =================================
-   ЧОТИРИ КАЛІБРУВАЛЬНІ ТОЧКИ
-   ================================= */
+    width:90vw;
+    height:80vh;
 
-.dot {
+    object-fit:contain;
+    background:#000;
 
-    position: fixed;
-
-    width: 34px;
-    height: 34px;
-
-    border-radius: 50%;
-
-    z-index: 10;
+    z-index:30;
+    display:none;
 }
 
-
-/* ЖОВТИЙ — верх ліворуч */
-
-#yellow {
-
-    left: 5%;
-    top: 5%;
-
-    background: #ffff00;
-
-    box-shadow:
-        0 0 10px #ffff00,
-        0 0 25px #ffff00;
-}
-
-
-/* ЗЕЛЕНИЙ — верх праворуч */
-
-#green {
-
-    right: 5%;
-    top: 5%;
-
-    background: #00ff00;
-
-    box-shadow:
-        0 0 10px #00ff00,
-        0 0 25px #00ff00;
-}
-
-
-/* СИНІЙ — низ ліворуч */
-
-#blue {
-
-    left: 5%;
-    bottom: 5%;
-
-    background: #0066ff;
-
-    box-shadow:
-        0 0 10px #0066ff,
-        0 0 25px #0066ff;
-}
-
-
-/* ПОМАРАНЧЕВИЙ — низ праворуч */
-
-#orange {
-
-    right: 5%;
-    bottom: 5%;
-
-    background: #ff8800;
-
-    box-shadow:
-        0 0 10px #ff8800,
-        0 0 25px #ff8800;
-}
-
-
-/* =================================
-   КНОПКА
-   ================================= */
-
-#cameraButton {
-
-    position: fixed;
-
-    right: 15px;
-    top: 50%;
-
-    transform: translateY(-50%);
-
-    width: 48px;
-    height: 48px;
-
-    border: none;
-
-    border-radius: 50%;
-
-    background: rgba(255,255,255,0.20);
-
-    color: white;
-
-    font-size: 23px;
-
-    z-index: 20;
-}
-
-
-/* =================================
-   СТАТУС
-   ================================= */
-
-#status {
-
-    position: fixed;
-
-    left: 50%;
-    top: 12px;
-
-    transform: translateX(-50%);
-
-    color: white;
-
-    background: rgba(0,0,0,0.4);
-
-    padding: 7px 12px;
-
-    border-radius: 10px;
-
-    font-family: Arial;
-
-    font-size: 14px;
-
-    z-index: 20;
-}
-
-
-/* =================================
-   СКАНУВАЛЬНИЙ CANVAS
-   ================================= */
-
+/* Сканер */
 #scan {
-
-    display: none;
+    display:none;
 }
 
+/* Калібрувальні точки */
+.dot {
+    position:fixed;
+
+    width:22px;
+    height:22px;
+
+    border-radius:50%;
+
+    z-index:10;
+}
+
+/* Жовтий — верхній лівий */
+#yellow {
+    left:4%;
+    top:4%;
+
+    background:#ffff00;
+
+    box-shadow:
+        0 0 8px #ffff00,
+        0 0 16px #ffff00;
+}
+
+/* Зелений — верхній правий */
+#green {
+    right:4%;
+    top:4%;
+
+    background:#00ff20;
+
+    box-shadow:
+        0 0 8px #00ff20,
+        0 0 16px #00ff20;
+}
+
+/* Синій — нижній лівий */
+#blue {
+    left:4%;
+    bottom:4%;
+
+    background:#0070ff;
+
+    box-shadow:
+        0 0 8px #0070ff,
+        0 0 16px #0070ff;
+}
+
+/* Помаранчевий — нижній правий */
+#orange {
+    right:4%;
+    bottom:4%;
+
+    background:#ff6500;
+
+    box-shadow:
+        0 0 8px #ff6500,
+        0 0 18px #ff6500;
+}
+
+/* Кнопка */
+#cameraButton {
+    position:fixed;
+
+    right:12px;
+    top:50%;
+
+    transform:translateY(-50%);
+
+    width:46px;
+    height:46px;
+
+    border:0;
+    border-radius:50%;
+
+    background:rgba(255,255,255,.20);
+
+    color:white;
+    font-size:22px;
+
+    z-index:50;
+}
+
+/* Статус */
+#status {
+    position:fixed;
+
+    left:50%;
+    top:10px;
+
+    transform:translateX(-50%);
+
+    color:white;
+
+    background:rgba(0,0,0,.45);
+
+    padding:6px 10px;
+
+    border-radius:9px;
+
+    font:13px Arial;
+
+    z-index:50;
+}
 </style>
 </head>
 
-
 <body>
-
-
-<!-- =================================
-     КАМЕРА
-     ================================= -->
 
 <video id="video"
        autoplay
        playsinline>
 </video>
 
-
-<!-- Камера, яку можна показати кнопкою -->
-
-<video id="cameraPreview"
+<video id="preview"
        autoplay
        playsinline>
 </video>
 
-
-<!-- Аналіз камери -->
-
 <canvas id="scan"></canvas>
-
-
-<!-- Малювання -->
 
 <canvas id="canvas"></canvas>
 
-
-<!-- =================================
-     КАЛІБРУВАЛЬНІ ТОЧКИ
-     ================================= -->
-
+<!-- 4 КУТИ -->
 <div id="yellow" class="dot"></div>
-
 <div id="green" class="dot"></div>
-
 <div id="blue" class="dot"></div>
-
 <div id="orange" class="dot"></div>
 
-
-<!-- =================================
-     КНОПКА
-     ================================= -->
-
-<button id="cameraButton">
-📷
-</button>
-
+<button id="cameraButton">📷</button>
 
 <div id="status">
-Запуск камери...
+Запуск...
 </div>
 
 
-
 <script>
-
-
-/* =================================
-   ELEMENTS
-   ================================= */
 
 const video =
     document.getElementById("video");
 
 const preview =
-    document.getElementById("cameraPreview");
+    document.getElementById("preview");
 
 const canvas =
     document.getElementById("canvas");
@@ -308,50 +214,47 @@ const scan =
     document.getElementById("scan");
 
 const sctx =
-    scan.getContext(
-        "2d",
-        { willReadFrequently:true }
-    );
+    scan.getContext("2d", {
+        willReadFrequently:true
+    });
 
 const status =
     document.getElementById("status");
 
 
-/* =================================
-   ЗМІННІ
-   ================================= */
+/* ======================================
+   КАМЕРА
+====================================== */
 
 let cameraReady = false;
 
-let previewVisible = false;
+let previewOn = false;
 
 
-/* =================================
-   КУТИ
-   ================================= */
+/* ======================================
+   КАЛІБРУВАННЯ
+====================================== */
 
 let corners = {
-
-    yellow: null,
-
-    green: null,
-
-    blue: null,
-
-    orange: null
+    yellow:null,
+    green:null,
+    blue:null,
+    orange:null
 };
 
 
-/* Остання позиція лазера */
+/* ======================================
+   ОСТАННЯ ПОЗИЦІЯ ЛАЗЕРА
+====================================== */
 
 let lastLaser = null;
 
 
-/* =================================
+/* ======================================
    РОЗМІР ПОЛОТНА
-   ================================= */
+====================================== */
 
-function resizeCanvas() {
+function resize() {
 
     canvas.width =
         window.innerWidth;
@@ -360,17 +263,17 @@ function resizeCanvas() {
         window.innerHeight;
 }
 
-resizeCanvas();
+resize();
 
 window.addEventListener(
     "resize",
-    resizeCanvas
+    resize
 );
 
 
-/* =================================
+/* ======================================
    ЗАПУСК КАМЕРИ
-   ================================= */
+====================================== */
 
 async function startCamera() {
 
@@ -380,41 +283,30 @@ async function startCamera() {
             await navigator.mediaDevices
             .getUserMedia({
 
-                video: {
+                video:{
+                    facingMode:"environment",
 
-                    facingMode:
-                        "environment",
-
-                    width: {
-                        ideal: 1280
+                    width:{
+                        ideal:1280
                     },
 
-                    height: {
-                        ideal: 720
+                    height:{
+                        ideal:720
                     }
                 },
 
-                audio: false
+                audio:false
             });
 
 
-        /* Основна камера */
-
         video.srcObject =
             stream;
-
-
-        await video.play();
-
-
-        /* Preview використовує
-           той самий потік */
 
         preview.srcObject =
             stream;
 
 
-        await preview.play();
+        await video.play();
 
 
         cameraReady = true;
@@ -424,56 +316,45 @@ async function startCamera() {
             "Камера працює";
 
 
-        /* Перше калібрування */
-
         setTimeout(
             calibrate,
             1000
         );
 
 
-    } catch(error) {
+    } catch(e) {
 
-        console.log(error);
+        console.log(e);
 
         status.textContent =
-            "Дозволь доступ до камери";
+            "Немає доступу до камери";
     }
 }
 
 
-/* =================================
-   ПОКАЗ / ПРИХОВУВАННЯ КАМЕРИ
-   ================================= */
+/* ======================================
+   ПЕРЕГЛЯД КАМЕРИ
+====================================== */
 
-function toggleCameraPreview() {
+document
+.getElementById("cameraButton")
+.addEventListener("click",function(){
 
-    previewVisible =
-        !previewVisible;
-
-
-    if(previewVisible) {
-
-        preview.style.display =
-            "block";
-
-        status.textContent =
-            "Перегляд камери";
-
-    } else {
-
-        preview.style.display =
-            "none";
-
-        status.textContent =
-            "Камера прихована";
-    }
-}
+    previewOn =
+        !previewOn;
 
 
-/* =================================
-   ПОШУК КОЛЬОРУ
-   ================================= */
+    preview.style.display =
+        previewOn
+        ? "block"
+        : "none";
+
+});
+
+
+/* ======================================
+   ПОШУК КАЛІБРУВАЛЬНИХ КОЛЬОРІВ
+====================================== */
 
 function findColor(type) {
 
@@ -498,7 +379,7 @@ function findColor(type) {
     );
 
 
-    const img =
+    const image =
         sctx.getImageData(
             0,
             0,
@@ -508,306 +389,562 @@ function findColor(type) {
 
 
     const data =
-        img.data;
+        image.data;
 
 
-    let sumX = 0;
-    let sumY = 0;
-
-    let count = 0;
+    let sx = 0;
+    let sy = 0;
+    let n = 0;
 
 
     for(
-        let y = 0;
-        y < H;
-        y += 2
-    ) {
+        let y=0;
+        y<H;
+        y+=2
+    ){
 
         for(
-            let x = 0;
-            x < W;
-            x += 2
-        ) {
+            let x=0;
+            x<W;
+            x+=2
+        ){
 
             const i =
-                (y * W + x) * 4;
+                (y*W+x)*4;
 
 
             const r =
                 data[i];
 
             const g =
-                data[i + 1];
+                data[i+1];
 
             const b =
-                data[i + 2];
+                data[i+2];
 
 
-            let ok = false;
+            let ok=false;
 
 
-            /* =========================
-               ЖОВТИЙ
-               ========================= */
+            /* ЖОВТИЙ */
 
-            if(type === "yellow") {
+            if(type==="yellow"){
 
                 ok =
-                    r > 170 &&
-                    g > 170 &&
-                    b < 140 &&
-                    r > b * 1.4 &&
-                    g > b * 1.4;
+                    r>160 &&
+                    g>160 &&
+                    b<150 &&
+                    r>b*1.25 &&
+                    g>b*1.25;
             }
 
 
-            /* =========================
-               ЗЕЛЕНИЙ
-               ========================= */
+            /* ЗЕЛЕНИЙ */
 
-            if(type === "green") {
+            if(type==="green"){
 
                 ok =
-                    g > 130 &&
-                    g > r * 1.35 &&
-                    g > b * 1.25;
+                    g>120 &&
+                    g>r*1.30 &&
+                    g>b*1.20;
             }
 
 
-            /* =========================
-               СИНІЙ
-               ========================= */
+            /* СИНІЙ */
 
-            if(type === "blue") {
+            if(type==="blue"){
 
                 ok =
-                    b > 130 &&
-                    b > r * 1.35 &&
-                    b > g * 1.15;
+                    b>120 &&
+                    b>r*1.30 &&
+                    b>g*1.10;
             }
 
 
-            /* =========================
-               ПОМАРАНЧЕВИЙ
-               ========================= */
+            /* ПОМАРАНЧЕВИЙ */
 
-            if(type === "orange") {
+            if(type==="orange"){
 
                 ok =
-                    r > 160 &&
-                    g > 60 &&
-                    g < 190 &&
-                    b < 110 &&
-                    r > g * 1.25;
+                    r>150 &&
+                    g>45 &&
+                    g<210 &&
+                    b<120 &&
+                    r>g*1.15 &&
+                    r>b*1.8;
             }
 
 
-            /* =========================
-               ЧЕРВОНИЙ ЛАЗЕР
-               ========================= */
+            if(ok){
 
-            if(type === "red") {
+                sx+=x;
+                sy+=y;
 
-                ok =
-                    r > 170 &&
-                    r > g * 1.7 &&
-                    r > b * 1.7 &&
-                    g < 130 &&
-                    b < 130;
-            }
-
-
-            if(ok) {
-
-                sumX += x;
-
-                sumY += y;
-
-                count++;
+                n++;
             }
         }
     }
 
 
-    if(count < 8)
+    if(n<5)
         return null;
 
 
     return {
-
-        x:
-            sumX / count,
-
-        y:
-            sumY / count,
-
-        size:
-            count
+        x:sx/n,
+        y:sy/n
     };
 }
 
 
-/* =================================
+/* ======================================
    КАЛІБРУВАННЯ
-   ================================= */
+====================================== */
 
-function calibrate() {
+function calibrate(){
 
     if(!cameraReady)
         return;
 
 
-    const colors = [
-
+    let names=[
         "yellow",
-
         "green",
-
         "blue",
-
         "orange"
     ];
 
 
-    let found = 0;
+    let found=0;
 
 
     for(
-        const color of colors
-    ) {
+        const name of names
+    ){
 
-        const point =
-            findColor(color);
+        const p =
+            findColor(name);
 
 
-        if(point) {
+        if(p){
 
-            corners[color] = {
-
-                x: point.x,
-
-                y: point.y
+            corners[name]={
+                x:p.x,
+                y:p.y
             };
-
 
             found++;
         }
     }
 
 
-    if(found === 4) {
+    if(found===4){
 
         status.textContent =
             "Калібрування OK";
 
-    } else {
+    }else{
 
         status.textContent =
-            "Калібрування " +
-            found +
-            "/4";
+            "Калібрування "+found+"/4";
     }
 }
 
 
-/* =================================
-   КООРДИНАТИ ЛАЗЕРА
-   ================================= */
+/* ======================================
+   4-ТОЧКОВЕ ПЕРСПЕКТИВНЕ ПЕРЕТВОРЕННЯ
+====================================== */
 
-function laserToScreen(p) {
+/*
+   Знаходимо коефіцієнти,
+   щоб камера -> екран
+   використовувала всі 4 кути.
+*/
 
-    if(
+function getHomography(src,dst){
 
-        !corners.yellow ||
+    let A=[];
+    let B=[];
 
-        !corners.green ||
 
-        !corners.blue ||
+    for(let i=0;i<4;i++){
 
-        !corners.orange
+        let x=src[i].x;
+        let y=src[i].y;
 
-    ) {
+        let X=dst[i].x;
+        let Y=dst[i].y;
 
-        return null;
+
+        A.push([
+            x,y,1,
+            0,0,0,
+            -x*X,-y*X
+        ]);
+
+        B.push(X);
+
+
+        A.push([
+            0,0,0,
+            x,y,1,
+            -x*Y,-y*Y
+        ]);
+
+        B.push(Y);
     }
 
 
-    const left =
+    /* Гаусове виключення */
 
-        (
-            corners.yellow.x +
-            corners.blue.x
-        ) / 2;
+    for(let i=0;i<8;i++){
 
+        let max=i;
 
-    const right =
+        for(
+            let j=i+1;
+            j<8;
+            j++
+        ){
 
-        (
-            corners.green.x +
-            corners.orange.x
-        ) / 2;
-
-
-    const top =
-
-        (
-            corners.yellow.y +
-            corners.green.y
-        ) / 2;
+            if(
+                Math.abs(A[j][i]) >
+                Math.abs(A[max][i])
+            ){
+                max=j;
+            }
+        }
 
 
-    const bottom =
-
-        (
-            corners.blue.y +
-            corners.orange.y
-        ) / 2;
+        [A[i],A[max]] =
+        [A[max],A[i]];
 
 
-    let x =
-
-        (p.x - left) /
-        (right - left);
+        [B[i],B[max]] =
+        [B[max],B[i]];
 
 
-    let y =
-
-        (p.y - top) /
-        (bottom - top);
+        let div=A[i][i];
 
 
-    x =
-        Math.max(
+        if(Math.abs(div)<1e-10)
+            return null;
+
+
+        for(
+            let j=i;
+            j<8;
+            j++
+        ){
+
+            A[i][j]/=div;
+        }
+
+        B[i]/=div;
+
+
+        for(
+            let k=0;
+            k<8;
+            k++
+        ){
+
+            if(k===i)
+                continue;
+
+
+            let f=A[k][i];
+
+
+            for(
+                let j=i;
+                j<8;
+                j++
+            ){
+
+                A[k][j]-=
+                    f*A[i][j];
+            }
+
+            B[k]-=
+                f*B[i];
+        }
+    }
+
+
+    return [
+        B[0],
+        B[1],
+        B[2],
+        B[3],
+        B[4],
+        B[5],
+        B[6],
+        B[7],
+        1
+    ];
+}
+
+
+/* ======================================
+   ПОШУК ЛАЗЕРА
+====================================== */
+
+function findLaser(){
+
+    if(!cameraReady)
+        return null;
+
+
+    const W=640;
+    const H=480;
+
+
+    scan.width=W;
+    scan.height=H;
+
+
+    sctx.drawImage(
+        video,
+        0,
+        0,
+        W,
+        H
+    );
+
+
+    const image =
+        sctx.getImageData(
             0,
-            Math.min(1,x)
+            0,
+            W,
+            H
         );
 
 
-    y =
-        Math.max(
-            0,
-            Math.min(1,y)
-        );
+    const data =
+        image.data;
+
+
+    /*
+       Не просто шукаємо червоний.
+
+       Шукаємо найбільш яскраву
+       насичену червону пляму.
+    */
+
+    let bestX=0;
+    let bestY=0;
+
+    let bestScore=0;
+
+
+    for(
+        let y=0;
+        y<H;
+        y+=2
+    ){
+
+        for(
+            let x=0;
+            x<W;
+            x+=2
+        ){
+
+            const i =
+                (y*W+x)*4;
+
+
+            const r=data[i];
+            const g=data[i+1];
+            const b=data[i+2];
+
+
+            /*
+               Наскільки червоний
+            */
+
+            const red =
+                r -
+                (g+b)/2;
+
+
+            /*
+               Яскравість
+            */
+
+            const brightness=r;
+
+
+            /*
+               Потрібне сильне
+               червоне переважання
+            */
+
+            if(
+                r<130 ||
+                red<45 ||
+                r<g*1.35 ||
+                r<b*1.35
+            ){
+                continue;
+            }
+
+
+            /*
+               Чим яскравіший
+               і червоніший —
+               тим більший score.
+            */
+
+            const score =
+                red*2 +
+                brightness;
+
+
+            if(score>bestScore){
+
+                bestScore=score;
+
+                bestX=x;
+                bestY=y;
+            }
+        }
+    }
+
+
+    /*
+       Якщо нічого схожого
+       на лазер не знайдено
+    */
+
+    if(bestScore<220)
+        return null;
 
 
     return {
-
-        x:
-            x * canvas.width,
-
-        y:
-            y * canvas.height
+        x:bestX,
+        y:bestY
     };
 }
 
 
-/* =================================
-   ПОШУК ЛАЗЕРА
-   ================================= */
+/* ======================================
+   ПЕРЕТВОРЕННЯ ЛАЗЕРА
+====================================== */
 
-function processLaser() {
+function laserToScreen(p){
 
-    if(!cameraReady) {
+    if(
+        !corners.yellow ||
+        !corners.green ||
+        !corners.blue ||
+        !corners.orange
+    ){
+        return null;
+    }
+
+
+    const src=[
+
+        corners.yellow,
+
+        corners.green,
+
+        corners.blue,
+
+        corners.orange
+    ];
+
+
+    const dst=[
+
+        {
+            x:0,
+            y:0
+        },
+
+        {
+            x:canvas.width,
+            y:0
+        },
+
+        {
+            x:0,
+            y:canvas.height
+        },
+
+        {
+            x:canvas.width,
+            y:canvas.height
+        }
+    ];
+
+
+    const H =
+        getHomography(
+            src,
+            dst
+        );
+
+
+    if(!H)
+        return null;
+
+
+    const den =
+        H[6]*p.x +
+        H[7]*p.y +
+        H[8];
+
+
+    if(Math.abs(den)<0.00001)
+        return null;
+
+
+    const X =
+        (
+            H[0]*p.x +
+            H[1]*p.y +
+            H[2]
+        ) / den;
+
+
+    const Y =
+        (
+            H[3]*p.x +
+            H[4]*p.y +
+            H[5]
+        ) / den;
+
+
+    return {
+        x:Math.max(
+            0,
+            Math.min(
+                canvas.width,
+                X
+            )
+        ),
+
+        y:Math.max(
+            0,
+            Math.min(
+                canvas.height,
+                Y
+            )
+        )
+    };
+}
+
+
+/* ======================================
+   ЛАЗЕР
+====================================== */
+
+function processLaser(){
+
+    if(!cameraReady){
 
         requestAnimationFrame(
             processLaser
@@ -818,62 +955,64 @@ function processLaser() {
 
 
     const laser =
-        findColor("red");
+        findLaser();
 
 
-    if(laser) {
+    if(laser){
 
-        const point =
+        const p =
             laserToScreen(laser);
 
 
-        if(point) {
+        if(p){
 
-            if(lastLaser) {
+            /*
+               Невелике згладжування,
+               щоб точка не тремтіла.
+            */
+
+            if(lastLaser){
+
+                p.x =
+                    lastLaser.x*0.35 +
+                    p.x*0.65;
+
+                p.y =
+                    lastLaser.y*0.35 +
+                    p.y*0.65;
+
 
                 ctx.beginPath();
-
 
                 ctx.moveTo(
                     lastLaser.x,
                     lastLaser.y
                 );
 
-
                 ctx.lineTo(
-                    point.x,
-                    point.y
+                    p.x,
+                    p.y
                 );
 
 
-                ctx.strokeStyle =
-                    "white";
+                ctx.strokeStyle="white";
 
+                ctx.lineWidth=4;
 
-                ctx.lineWidth =
-                    5;
+                ctx.lineCap="round";
 
-
-                ctx.lineCap =
-                    "round";
-
-
-                ctx.lineJoin =
-                    "round";
-
+                ctx.lineJoin="round";
 
                 ctx.stroke();
             }
 
 
-            lastLaser =
-                point;
+            lastLaser=p;
         }
 
-    } else {
+    }else{
 
-        lastLaser =
-            null;
+        lastLaser=null;
     }
 
 
@@ -883,42 +1022,19 @@ function processLaser() {
 }
 
 
-/* =================================
-   КНОПКА
-   ================================= */
-
-document
-    .getElementById(
-        "cameraButton"
-    )
-    .addEventListener(
-        "click",
-        toggleCameraPreview
-    );
-
-
-/* =================================
+/* ======================================
    КАЛІБРУВАННЯ КОЖНІ 5 СЕКУНД
-   ================================= */
+====================================== */
 
 setInterval(
-
-    () => {
-
-        if(cameraReady) {
-
-            calibrate();
-        }
-
-    },
-
+    calibrate,
     5000
 );
 
 
-/* =================================
+/* ======================================
    СТАРТ
-   ================================= */
+====================================== */
 
 startCamera();
 
@@ -927,4 +1043,4 @@ processLaser();
 </script>
 
 </body>
-    </html>
+</html>
