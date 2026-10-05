@@ -2,548 +2,591 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 
 <title>Laser Projector</title>
 
 <style>
-html, body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #24113d;
+html,body{
+    margin:0;
+    padding:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#24113d;
 }
 
-body {
-    position: relative;
-    font-family: Arial, sans-serif;
+body{
+    position:relative;
+    font-family:Arial,sans-serif;
 }
 
-#draw {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
+/* Полотно для малювання */
+#draw{
+    position:fixed;
+    inset:0;
+    width:100%;
+    height:100%;
+    z-index:1;
 }
 
-.dot {
-    position: fixed;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 5;
-    box-shadow: 0 0 8px rgba(255,255,255,0.35);
+/* Калібрувальні точки */
+.dot{
+    position:fixed;
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+    z-index:5;
+    pointer-events:none;
 }
 
-#yellow {
-    left: 4%;
-    top: 4%;
-    background: #ffff00;
+#yellow{
+    left:4%;
+    top:4%;
+    background:#ffff00;
 }
 
-#green {
-    left: 96%;
-    top: 4%;
-    background: #00ff30;
+#green{
+    left:96%;
+    top:4%;
+    background:#00ff30;
 }
 
-#blue {
-    left: 4%;
-    top: 96%;
-    background: #008cff;
+#blue{
+    left:4%;
+    top:96%;
+    background:#008cff;
 }
 
-#orange {
-    left: 96%;
-    top: 96%;
-    background: #ff9800;
+#orange{
+    left:96%;
+    top:96%;
+    background:#ff9800;
 }
 
-#cameraButton {
-    position: fixed;
-    right: 12px;
-    top: 12px;
-    z-index: 20;
+/* Кнопка камери */
+#cameraButton{
+    position:fixed;
+    right:12px;
+    top:12px;
+    z-index:100;
 
-    width: 48px;
-    height: 48px;
+    width:48px;
+    height:48px;
 
-    border: 0;
-    border-radius: 50%;
+    border:0;
+    border-radius:50%;
 
-    background: rgba(0,0,0,0.65);
-    color: white;
-    font-size: 24px;
+    background:rgba(0,0,0,.65);
+    color:white;
+
+    font-size:24px;
 }
 
-#preview {
-    position: fixed;
-    right: 12px;
-    top: 70px;
-
-    width: 240px;
-    height: 180px;
-
-    object-fit: cover;
-    background: black;
-
-    z-index: 19;
-
-    display: none;
-
-    border: 2px solid white;
-    border-radius: 8px;
+/*
+   ВАЖЛИВО:
+   відео повністю приховане.
+   Воно НЕ займає місце на екрані.
+*/
+#video{
+    position:fixed;
+    width:1px;
+    height:1px;
+    left:-100px;
+    top:-100px;
+    opacity:0;
+    pointer-events:none;
 }
 
-#status {
-    position: fixed;
-    left: 10px;
-    bottom: 10px;
+/* Прев'ю показується ТІЛЬКИ кнопкою */
+#preview{
+    position:fixed;
+    right:12px;
+    top:70px;
 
-    z-index: 20;
+    width:240px;
+    height:180px;
 
-    color: white;
-    background: rgba(0,0,0,0.55);
+    object-fit:cover;
 
-    padding: 6px 10px;
-    border-radius: 8px;
+    background:#000;
 
-    font-size: 13px;
+    z-index:99;
+
+    display:none;
+
+    border:2px solid white;
+    border-radius:8px;
+}
+
+/* Статус */
+#status{
+    position:fixed;
+    left:10px;
+    bottom:10px;
+
+    z-index:20;
+
+    color:white;
+    background:rgba(0,0,0,.5);
+
+    padding:6px 10px;
+    border-radius:8px;
+
+    font-size:13px;
 }
 </style>
 </head>
 
 <body>
 
+<!-- Камера. Завжди прихована -->
 <video id="video"
        autoplay
        playsinline
-       muted
-       style="display:none"></video>
+       muted></video>
 
+<!-- Це відео показується ТІЛЬКИ після натискання 📷 -->
 <video id="preview"
        autoplay
        playsinline
        muted></video>
 
+<!-- Прихований аналіз камери -->
 <canvas id="analysis"></canvas>
+
+<!-- Малювання -->
 <canvas id="draw"></canvas>
 
+<!-- 4 калібрувальні точки -->
 <div id="yellow" class="dot"></div>
 <div id="green" class="dot"></div>
 <div id="blue" class="dot"></div>
 <div id="orange" class="dot"></div>
 
+<!-- Кнопка -->
 <button id="cameraButton">📷</button>
 
 <div id="status">Запуск камери...</div>
 
 <script>
 
-const video = document.getElementById("video");
-const preview = document.getElementById("preview");
+const video =
+    document.getElementById("video");
 
-const analysis = document.getElementById("analysis");
-const draw = document.getElementById("draw");
+const preview =
+    document.getElementById("preview");
 
-const actx = analysis.getContext("2d", {
-    willReadFrequently: true
-});
+const analysis =
+    document.getElementById("analysis");
 
-const dctx = draw.getContext("2d");
+const draw =
+    document.getElementById("draw");
 
-const status = document.getElementById("status");
+const actx =
+    analysis.getContext("2d",{
+        willReadFrequently:true
+    });
 
-let W = 640;
-let H = 480;
+const dctx =
+    draw.getContext("2d");
 
-let cameraReady = false;
+const status =
+    document.getElementById("status");
 
-let calibration = null;
-let lastCalibration = 0;
+let W=640;
+let H=480;
 
-let lastLaser = null;
-let laserVisible = false;
+let cameraReady=false;
 
-let cameraPreview = false;
+let calibration=null;
+
+let lastCalibration=0;
+
+let lastLaser=null;
+
+let previewVisible=false;
 
 
-/* ---------------------------------------------------
+/* =================================================
+   РОЗМІР ЕКРАНА
+================================================= */
+
+function resize(){
+
+    draw.width=
+        window.innerWidth;
+
+    draw.height=
+        window.innerHeight;
+}
+
+window.addEventListener(
+    "resize",
+    resize
+);
+
+resize();
+
+
+/* =================================================
    КАМЕРА
---------------------------------------------------- */
+================================================= */
 
-async function startCamera() {
+async function startCamera(){
 
-    try {
+    try{
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                facingMode: {
-                    ideal: "environment"
+        const stream=
+            await navigator.mediaDevices.getUserMedia({
+
+                video:{
+                    facingMode:{
+                        ideal:"environment"
+                    },
+
+                    width:{
+                        ideal:1280
+                    },
+
+                    height:{
+                        ideal:720
+                    }
                 },
-                width: {
-                    ideal: 1280
-                },
-                height: {
-                    ideal: 720
-                }
-            },
-            audio: false
-        });
 
-        video.srcObject = stream;
+                audio:false
+            });
+
+        video.srcObject=stream;
 
         await video.play();
 
-        W = video.videoWidth || 1280;
-        H = video.videoHeight || 720;
+        W=
+            video.videoWidth ||
+            1280;
 
-        analysis.width = W;
-        analysis.height = H;
+        H=
+            video.videoHeight ||
+            720;
 
-        cameraReady = true;
+        analysis.width=W;
+        analysis.height=H;
 
-        status.textContent = "Камера працює";
+        cameraReady=true;
 
-        requestAnimationFrame(mainLoop);
+        status.textContent=
+            "Камера готова";
 
-    } catch (e) {
+        requestAnimationFrame(
+            mainLoop
+        );
 
-        console.error(e);
+    }catch(error){
 
-        status.textContent =
-            "Не вдалося отримати доступ до камери";
+        console.error(error);
 
+        status.textContent=
+            "Немає доступу до камери";
     }
 }
 
 
-/* ---------------------------------------------------
-   КНОПКА ПЕРЕГЛЯДУ КАМЕРИ
---------------------------------------------------- */
+/* =================================================
+   КНОПКА 📷
+================================================= */
 
-document.getElementById("cameraButton").onclick = () => {
+document
+.getElementById("cameraButton")
+.addEventListener("click",()=>{
 
-    cameraPreview = !cameraPreview;
+    previewVisible=
+        !previewVisible;
 
-    if (cameraPreview) {
+    if(previewVisible){
 
-        preview.srcObject = video.srcObject;
-        preview.style.display = "block";
+        /*
+           Показуємо той самий потік,
+           який вже працює приховано.
+        */
 
-    } else {
+        preview.srcObject=
+            video.srcObject;
 
-        preview.style.display = "none";
+        preview.style.display=
+            "block";
 
+    }else{
+
+        /*
+           ВАЖЛИВО:
+           лише ховаємо відео.
+           Камера НЕ вимикається.
+        */
+
+        preview.style.display=
+            "none";
+
+        preview.srcObject=null;
     }
-};
+});
 
 
-/* ---------------------------------------------------
-   ОТРИМАННЯ КООРДИНАТ КАЛІБРУВАЛЬНИХ ТОЧОК
---------------------------------------------------- */
+/* =================================================
+   КООРДИНАТИ ТОЧКИ НА ЕКРАНІ
+================================================= */
 
-function getScreenPoint(id) {
+function getScreenPoint(id){
 
-    const el = document.getElementById(id);
+    const el=
+        document.getElementById(id);
 
-    const r = el.getBoundingClientRect();
+    const r=
+        el.getBoundingClientRect();
 
-    return {
-        x: r.left + r.width / 2,
-        y: r.top + r.height / 2
+    return{
+        x:r.left+r.width/2,
+        y:r.top+r.height/2
     };
 }
 
 
-/* ---------------------------------------------------
-   ПОШУК КОЛЬОРОВОЇ ТОЧКИ В КАМЕРІ
---------------------------------------------------- */
+/* =================================================
+   ПОШУК КАЛІБРУВАЛЬНИХ КОЛЬОРІВ
+================================================= */
 
-function findColor(type) {
+function findColor(type){
 
-    const image = actx.getImageData(0, 0, W, H);
-    const data = image.data;
+    const image=
+        actx.getImageData(
+            0,
+            0,
+            W,
+            H
+        );
 
-    let bestX = 0;
-    let bestY = 0;
-    let bestScore = 0;
+    const data=image.data;
 
-    /*
-      Не скануємо кожен піксель по кілька разів.
-      Але для маленького лазера нижче буде окремий
-      повний пошук.
-    */
+    let bestScore=0;
+    let bestX=0;
+    let bestY=0;
 
-    for (let y = 0; y < H; y += 2) {
+    for(let y=0;y<H;y+=2){
 
-        for (let x = 0; x < W; x += 2) {
+        for(let x=0;x<W;x+=2){
 
-            const i = (y * W + x) * 4;
+            const i=
+                (y*W+x)*4;
 
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
+            const r=data[i];
+            const g=data[i+1];
+            const b=data[i+2];
 
-            let score = 0;
+            let score=0;
 
-            if (type === "yellow") {
 
-                if (
-                    r > 150 &&
-                    g > 150 &&
-                    b < 120 &&
-                    r > b * 1.5 &&
-                    g > b * 1.5
-                ) {
-                    score =
-                        r + g - b;
+            /* ЖОВТИЙ */
+
+            if(type==="yellow"){
+
+                if(
+                    r>150 &&
+                    g>150 &&
+                    b<120 &&
+                    r>b*1.5 &&
+                    g>b*1.5
+                ){
+
+                    score=
+                        r+g-b;
                 }
-
             }
 
-            else if (type === "green") {
 
-                if (
-                    g > 130 &&
-                    g > r * 1.25 &&
-                    g > b * 1.15
-                ) {
-                    score =
-                        g * 2 - r - b;
+            /* ЗЕЛЕНИЙ */
+
+            if(type==="green"){
+
+                if(
+                    g>130 &&
+                    g>r*1.25 &&
+                    g>b*1.15
+                ){
+
+                    score=
+                        g*2-r-b;
                 }
-
             }
 
-            else if (type === "blue") {
 
-                if (
-                    b > 120 &&
-                    b > r * 1.25 &&
-                    b > g * 1.15
-                ) {
-                    score =
-                        b * 2 - r - g;
+            /* СИНІЙ */
+
+            if(type==="blue"){
+
+                if(
+                    b>120 &&
+                    b>r*1.25 &&
+                    b>g*1.15
+                ){
+
+                    score=
+                        b*2-r-g;
                 }
-
             }
 
-            else if (type === "orange") {
 
-                /*
-                   Помаранчевий шукаємо окремо.
-                   Він НЕ повинен потрапляти в лазер.
-                */
+            /* ПОМАРАНЧЕВИЙ */
 
-                if (
-                    r > 160 &&
-                    g > 70 &&
-                    g < 190 &&
-                    b < 100 &&
-                    r > g * 1.25 &&
-                    g > b * 1.4
-                ) {
+            if(type==="orange"){
 
-                    score =
-                        r * 2 +
-                        g -
-                        b * 2;
+                if(
+                    r>160 &&
+                    g>70 &&
+                    g<190 &&
+                    b<100 &&
+                    r>g*1.25 &&
+                    g>b*1.4
+                ){
 
+                    score=
+                        r*2+g-b*2;
                 }
-
             }
 
-            if (score > bestScore) {
 
-                bestScore = score;
-                bestX = x;
-                bestY = y;
+            if(score>bestScore){
 
+                bestScore=score;
+
+                bestX=x;
+                bestY=y;
             }
         }
     }
 
-    if (bestScore <= 0) {
+    if(bestScore<=0)
         return null;
-    }
 
-    return {
-        x: bestX,
-        y: bestY,
-        score: bestScore
+    return{
+        x:bestX,
+        y:bestY,
+        score:bestScore
     };
 }
 
 
-/* ---------------------------------------------------
-   КАЛІБРУВАННЯ
---------------------------------------------------- */
-
-function calibrate() {
-
-    if (!cameraReady) return;
-
-    actx.drawImage(video, 0, 0, W, H);
-
-    const yellow = findColor("yellow");
-    const green = findColor("green");
-    const blue = findColor("blue");
-    const orange = findColor("orange");
-
-    if (
-        !yellow ||
-        !green ||
-        !blue ||
-        !orange
-    ) {
-
-        status.textContent =
-            "Калібрування: шукаю 4 точки";
-
-        return;
-    }
-
-    /*
-       Важливо:
-
-       Камерні координати = де камера побачила точки.
-
-       Екранні координати = де реально знаходяться точки
-       на проектованому екрані.
-
-       Тому більше НЕ переводимо їх у самі кути 0/100%.
-       Використовуємо справжні центри точок.
-    */
-
-    const screenYellow = getScreenPoint("yellow");
-    const screenGreen = getScreenPoint("green");
-    const screenBlue = getScreenPoint("blue");
-    const screenOrange = getScreenPoint("orange");
-
-    const src = [
-        yellow,
-        green,
-        blue,
-        orange
-    ];
-
-    const dst = [
-        screenYellow,
-        screenGreen,
-        screenBlue,
-        screenOrange
-    ];
-
-    const Hmat = computeHomography(src, dst);
-
-    if (!Hmat) {
-
-        status.textContent =
-            "Помилка калібрування";
-
-        return;
-    }
-
-    calibration = Hmat;
-
-    status.textContent =
-        "Калібрування готове";
-
-    lastCalibration = performance.now();
-}
-
-
-/* ---------------------------------------------------
+/* =================================================
    HOMOGRAPHY
---------------------------------------------------- */
+================================================= */
 
-function computeHomography(src, dst) {
+function computeHomography(src,dst){
 
-    let A = [];
-    let B = [];
+    let A=[];
+    let B=[];
 
-    for (let i = 0; i < 4; i++) {
+    for(let i=0;i<4;i++){
 
-        const x = src[i].x;
-        const y = src[i].y;
+        const x=src[i].x;
+        const y=src[i].y;
 
-        const X = dst[i].x;
-        const Y = dst[i].y;
+        const X=dst[i].x;
+        const Y=dst[i].y;
 
         A.push([
-            x, y, 1,
-            0, 0, 0,
-            -X*x, -X*y
+            x,y,1,
+            0,0,0,
+            -X*x,
+            -X*y
         ]);
 
         B.push(X);
 
         A.push([
-            0, 0, 0,
-            x, y, 1,
-            -Y*x, -Y*y
+            0,0,0,
+            x,y,1,
+            -Y*x,
+            -Y*y
         ]);
 
         B.push(Y);
     }
 
-    const n = 8;
+    const n=8;
 
-    for (let i = 0; i < n; i++) {
+    for(let i=0;i<n;i++){
 
-        let maxRow = i;
+        let maxRow=i;
 
-        for (let j = i + 1; j < n; j++) {
+        for(
+            let j=i+1;
+            j<n;
+            j++
+        ){
 
-            if (
+            if(
                 Math.abs(A[j][i]) >
                 Math.abs(A[maxRow][i])
-            ) {
-                maxRow = j;
+            ){
+
+                maxRow=j;
             }
         }
 
-        if (
-            Math.abs(A[maxRow][i]) <
-            0.0000001
-        ) {
+        if(
+            Math.abs(A[maxRow][i])
+            <0.0000001
+        ){
+
             return null;
         }
 
-        [A[i], A[maxRow]] =
-            [A[maxRow], A[i]];
+        [A[i],A[maxRow]]=
+            [A[maxRow],A[i]];
 
-        [B[i], B[maxRow]] =
-            [B[maxRow], B[i]];
+        [B[i],B[maxRow]]=
+            [B[maxRow],B[i]];
 
-        const div = A[i][i];
+        const div=A[i][i];
 
-        for (let j = i; j < n; j++) {
-            A[i][j] /= div;
+        for(
+            let j=i;
+            j<n;
+            j++
+        ){
+
+            A[i][j]/=div;
         }
 
-        B[i] /= div;
+        B[i]/=div;
 
-        for (let k = 0; k < n; k++) {
+        for(
+            let k=0;
+            k<n;
+            k++
+        ){
 
-            if (k === i) continue;
+            if(k===i)
+                continue;
 
-            const factor = A[k][i];
+            const factor=
+                A[k][i];
 
-            for (let j = i; j < n; j++) {
-                A[k][j] -= factor * A[i][j];
+            for(
+                let j=i;
+                j<n;
+                j++
+            ){
+
+                A[k][j]
+                    -=factor*A[i][j];
             }
 
-            B[k] -= factor * B[i];
+            B[k]
+                -=factor*B[i];
         }
     }
 
-    return [
+    return[
         B[0],
         B[1],
         B[2],
@@ -557,35 +600,127 @@ function computeHomography(src, dst) {
 }
 
 
-/* ---------------------------------------------------
-   ПЕРЕВІРКА: ЧИ НЕ БІЛЯ КАЛІБРУВАЛЬНОЇ ТОЧКИ
---------------------------------------------------- */
+/* =================================================
+   КАЛІБРУВАННЯ
+================================================= */
 
-function isNearCalibrationPoint(x, y) {
+function calibrate(){
 
-    if (!calibration) return false;
+    if(!cameraReady)
+        return;
 
-    const points = [
-        findColor("yellow"),
-        findColor("green"),
-        findColor("blue"),
-        findColor("orange")
+    actx.drawImage(
+        video,
+        0,
+        0,
+        W,
+        H
+    );
+
+    const yellow=
+        findColor("yellow");
+
+    const green=
+        findColor("green");
+
+    const blue=
+        findColor("blue");
+
+    const orange=
+        findColor("orange");
+
+
+    if(
+        !yellow||
+        !green||
+        !blue||
+        !orange
+    ){
+
+        status.textContent=
+            "Шукаю 4 калібрувальні точки";
+
+        return;
+    }
+
+
+    const src=[
+        yellow,
+        green,
+        blue,
+        orange
     ];
 
-    const radius = Math.min(W, H) * 0.075;
 
-    for (const p of points) {
+    const dst=[
+        getScreenPoint("yellow"),
+        getScreenPoint("green"),
+        getScreenPoint("blue"),
+        getScreenPoint("orange")
+    ];
 
-        if (!p) continue;
 
-        const dx = x - p.x;
-        const dy = y - p.y;
+    const Hmat=
+        computeHomography(
+            src,
+            dst
+        );
 
-        if (
-            dx * dx +
-            dy * dy <
-            radius * radius
-        ) {
+
+    if(!Hmat){
+
+        status.textContent=
+            "Помилка калібрування";
+
+        return;
+    }
+
+
+    calibration=Hmat;
+
+    lastCalibration=
+        performance.now();
+
+    status.textContent=
+        "Калібрування готове";
+}
+
+
+/* =================================================
+   ЧИ БІЛЯ КАЛІБРУВАЛЬНОЇ ТОЧКИ
+================================================= */
+
+function isNearCalibrationPoint(x,y){
+
+    const colors=[
+        "yellow",
+        "green",
+        "blue",
+        "orange"
+    ];
+
+    const radius=
+        Math.min(W,H)*0.075;
+
+    for(
+        const color of colors
+    ){
+
+        const p=
+            findColor(color);
+
+        if(!p)
+            continue;
+
+        const dx=x-p.x;
+        const dy=y-p.y;
+
+        if(
+            dx*dx+
+            dy*dy<
+            radius*radius
+        ){
+
             return true;
         }
     }
@@ -594,284 +729,325 @@ function isNearCalibrationPoint(x, y) {
 }
 
 
-/* ---------------------------------------------------
+/* =================================================
    ПОШУК ЛАЗЕРА
---------------------------------------------------- */
+================================================= */
 
-function findLaser() {
+function findLaser(){
 
-    const image =
-        actx.getImageData(0, 0, W, H);
+    const image=
+        actx.getImageData(
+            0,
+            0,
+            W,
+            H
+        );
 
-    const data = image.data;
+    const data=image.data;
 
-    let bestScore = 0;
-    let bestX = -1;
-    let bestY = -1;
+    let bestScore=0;
+    let bestX=-1;
+    let bestY=-1;
+
 
     /*
-       ЛАЗЕР ДУЖЕ МАЛЕНЬКИЙ.
-
-       Тому тут скануємо КОЖЕН піксель,
-       а не кожен другий.
+       Кожен піксель.
+       Це важливо, бо лазер дуже маленький.
     */
 
-    for (let y = 1; y < H - 1; y++) {
+    for(
+        let y=1;
+        y<H-1;
+        y++
+    ){
 
-        for (let x = 1; x < W - 1; x++) {
+        for(
+            let x=1;
+            x<W-1;
+            x++
+        ){
 
-            const i = (y * W + x) * 4;
+            const i=
+                (y*W+x)*4;
 
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
+            const r=data[i];
+            const g=data[i+1];
+            const b=data[i+2];
 
-            /*
-               Червоний лазер:
-
-               R дуже сильний
-               G/B значно слабші
-            */
-
-            if (r < 130) continue;
-
-            if (r - g < 65) continue;
-            if (r - b < 65) continue;
 
             /*
-               Наскільки цей піксель яскравіший
-               за сусідів.
+               Сильний червоний.
             */
 
-            const il = (y * W + (x - 1)) * 4;
-            const ir = (y * W + (x + 1)) * 4;
-            const iu = ((y - 1) * W + x) * 4;
-            const id = ((y + 1) * W + x) * 4;
+            if(r<130)
+                continue;
 
-            const neighbourR =
+            if(r-g<65)
+                continue;
+
+            if(r-b<65)
+                continue;
+
+
+            /*
+               Локальна яскравість.
+            */
+
+            const left=
+                (y*W+x-1)*4;
+
+            const right=
+                (y*W+x+1)*4;
+
+            const up=
+                ((y-1)*W+x)*4;
+
+            const down=
+                ((y+1)*W+x)*4;
+
+
+            const neighbourR=
                 (
-                    data[il] +
-                    data[ir] +
-                    data[iu] +
-                    data[id]
-                ) / 4;
+                    data[left]+
+                    data[right]+
+                    data[up]+
+                    data[down]
+                )/4;
 
-            const localContrast =
-                r - neighbourR;
 
-            /*
-               Лазер повинен бути маленькою
-               локальною яскравою плямою.
-            */
+            const contrast=
+                r-neighbourR;
 
-            if (localContrast < 8) continue;
 
-            let score =
-                (r - g) * 1.8 +
-                (r - b) * 1.8 +
-                localContrast * 4 +
-                r * 0.3;
+            if(contrast<8)
+                continue;
+
 
             /*
-               Перевіряємо маленьку область навколо
-               кандидата.
-
-               Це дозволяє знайти навіть лазер,
-               який займає всього кілька пікселів.
+               Перевіряємо маленьку область.
             */
 
-            let redPixels = 0;
-            let totalRed = 0;
+            let redPixels=0;
+            let totalRed=0;
 
-            for (
-                let yy = Math.max(0, y - 3);
-                yy <= Math.min(H - 1, y + 3);
+
+            for(
+                let yy=Math.max(0,y-3);
+                yy<=Math.min(H-1,y+3);
                 yy++
-            ) {
+            ){
 
-                for (
-                    let xx = Math.max(0, x - 3);
-                    xx <= Math.min(W - 1, x + 3);
+                for(
+                    let xx=Math.max(0,x-3);
+                    xx<=Math.min(W-1,x+3);
                     xx++
-                ) {
+                ){
 
-                    const q =
-                        (yy * W + xx) * 4;
+                    const q=
+                        (yy*W+xx)*4;
 
-                    const rr = data[q];
-                    const gg = data[q + 1];
-                    const bb = data[q + 2];
+                    const rr=data[q];
+                    const gg=data[q+1];
+                    const bb=data[q+2];
 
-                    if (
-                        rr > 100 &&
-                        rr - gg > 45 &&
-                        rr - bb > 45
-                    ) {
+
+                    if(
+                        rr>100 &&
+                        rr-gg>45 &&
+                        rr-bb>45
+                    ){
 
                         redPixels++;
 
-                        totalRed +=
-                            rr - (gg + bb) / 2;
+                        totalRed+=
+                            rr-
+                            (gg+bb)/2;
                     }
                 }
             }
 
-            if (redPixels < 1) continue;
 
             /*
-               Дуже велика червона/помаранчева область
-               не схожа на маленьку лазерну пляму.
+               Помаранчева велика пляма
+               не повинна пройти.
             */
 
-            if (redPixels > 45) continue;
+            if(redPixels>45)
+                continue;
 
-            score +=
-                totalRed * 1.5;
+
+            let score=
+                (r-g)*1.8+
+                (r-b)*1.8+
+                contrast*4+
+                r*.3+
+                totalRed*1.5;
+
 
             /*
-               Якщо це один із кутів,
-               де знаходяться кольорові точки,
-               не приймаємо його за лазер.
+               Не беремо калібрувальні точки.
             */
 
-            if (isNearCalibrationPoint(x, y)) {
+            if(
+                isNearCalibrationPoint(
+                    x,
+                    y
+                )
+            ){
+
                 continue;
             }
 
-            if (score > bestScore) {
 
-                bestScore = score;
+            if(score>bestScore){
 
-                bestX = x;
-                bestY = y;
+                bestScore=score;
+
+                bestX=x;
+                bestY=y;
             }
         }
     }
 
-    if (bestX < 0) {
+
+    if(bestX<0)
         return null;
-    }
+
 
     /*
-       Додатково знаходимо центр маленької
-       червоної плями навколо найкращого пікселя.
+       Центр лазерної плями.
     */
 
-    let sumX = 0;
-    let sumY = 0;
-    let sumWeight = 0;
+    let sumX=0;
+    let sumY=0;
+    let sumWeight=0;
 
-    for (
-        let y = Math.max(0, bestY - 5);
-        y <= Math.min(H - 1, bestY + 5);
+
+    for(
+        let y=Math.max(0,bestY-5);
+        y<=Math.min(H-1,bestY+5);
         y++
-    ) {
+    ){
 
-        for (
-            let x = Math.max(0, bestX - 5);
-            x <= Math.min(W - 1, bestX + 5);
+        for(
+            let x=Math.max(0,bestX-5);
+            x<=Math.min(W-1,bestX+5);
             x++
-        ) {
+        ){
 
-            const i =
-                (y * W + x) * 4;
+            const i=
+                (y*W+x)*4;
 
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
+            const r=data[i];
+            const g=data[i+1];
+            const b=data[i+2];
 
-            const red =
-                r - Math.max(g, b);
 
-            if (
-                red > 50 &&
-                r > 110
-            ) {
+            const red=
+                r-Math.max(g,b);
 
-                const weight =
-                    red * red;
 
-                sumX += x * weight;
-                sumY += y * weight;
-                sumWeight += weight;
+            if(
+                red>50 &&
+                r>110
+            ){
+
+                const weight=
+                    red*red;
+
+                sumX+=x*weight;
+                sumY+=y*weight;
+
+                sumWeight+=weight;
             }
         }
     }
 
-    if (sumWeight === 0) {
-        return null;
-    }
 
-    return {
-        x: sumX / sumWeight,
-        y: sumY / sumWeight
+    if(sumWeight===0)
+        return null;
+
+
+    return{
+        x:sumX/sumWeight,
+        y:sumY/sumWeight
     };
 }
 
 
-/* ---------------------------------------------------
-   HOMOGRAPHY: КАМЕРА → ЕКРАН
---------------------------------------------------- */
+/* =================================================
+   КАМЕРА → ЕКРАН
+================================================= */
 
-function laserToScreen(p) {
+function laserToScreen(p){
 
-    if (!calibration) return null;
+    if(!calibration)
+        return null;
 
-    const h = calibration;
+    const h=calibration;
 
-    const denominator =
-        h[6] * p.x +
-        h[7] * p.y +
+
+    const denominator=
+        h[6]*p.x+
+        h[7]*p.y+
         1;
 
-    if (
-        Math.abs(denominator) <
-        0.000001
-    ) {
+
+    if(
+        Math.abs(denominator)
+        <0.000001
+    ){
+
         return null;
     }
 
-    return {
+
+    return{
 
         x:
-            (
-                h[0] * p.x +
-                h[1] * p.y +
-                h[2]
-            ) / denominator,
+        (
+            h[0]*p.x+
+            h[1]*p.y+
+            h[2]
+        )/denominator,
 
         y:
-            (
-                h[3] * p.x +
-                h[4] * p.y +
-                h[5]
-            ) / denominator
+        (
+            h[3]*p.x+
+            h[4]*p.y+
+            h[5]
+        )/denominator
     };
 }
 
 
-/* ---------------------------------------------------
-   ОСНОВНИЙ ЦИКЛ
---------------------------------------------------- */
+/* =================================================
+   ГОЛОВНИЙ ЦИКЛ
+================================================= */
 
-function mainLoop() {
+function mainLoop(){
 
-    if (!cameraReady) return;
+    if(!cameraReady)
+        return;
+
 
     /*
-       Кожні 5 секунд нове калібрування.
+       Нове калібрування кожні 5 секунд.
     */
 
-    if (
-        !calibration ||
-        performance.now() - lastCalibration > 5000
-    ) {
+    if(
+        !calibration||
+        performance.now()-
+        lastCalibration>5000
+    ){
 
         calibrate();
     }
 
+
     /*
-       Кадр камери.
+       Аналіз камери.
+       Саме відео при цьому НЕ показується.
     */
 
     actx.drawImage(
@@ -882,47 +1058,43 @@ function mainLoop() {
         H
     );
 
-    /*
-       Шукаємо лазер.
-    */
 
-    const laser = findLaser();
+    const laser=
+        findLaser();
 
-    if (laser) {
 
-        const screen =
+    if(laser){
+
+        const screen=
             laserToScreen(laser);
 
-        if (screen) {
+
+        if(screen){
 
             /*
-               Плавність руху.
+               Плавність.
             */
 
-            if (lastLaser) {
+            if(lastLaser){
 
-                screen.x =
-                    lastLaser.x * 0.25 +
-                    screen.x * 0.75;
+                screen.x=
+                    lastLaser.x*.25+
+                    screen.x*.75;
 
-                screen.y =
-                    lastLaser.y * 0.25 +
-                    screen.y * 0.75;
+                screen.y=
+                    lastLaser.y*.25+
+                    screen.y*.75;
             }
 
-            /*
-               Малюємо тільки якщо координата
-               знаходиться на екрані.
-            */
 
-            if (
-                screen.x >= 0 &&
-                screen.x <= window.innerWidth &&
-                screen.y >= 0 &&
-                screen.y <= window.innerHeight
-            ) {
+            if(
+                screen.x>=0 &&
+                screen.x<=window.innerWidth &&
+                screen.y>=0 &&
+                screen.y<=window.innerHeight
+            ){
 
-                if (lastLaser) {
+                if(lastLaser){
 
                     dctx.beginPath();
 
@@ -936,64 +1108,47 @@ function mainLoop() {
                         screen.y
                     );
 
-                    dctx.strokeStyle = "white";
-                    dctx.lineWidth = 4;
-                    dctx.lineCap = "round";
+                    dctx.strokeStyle=
+                        "white";
+
+                    dctx.lineWidth=4;
+
+                    dctx.lineCap=
+                        "round";
 
                     dctx.stroke();
                 }
 
-                lastLaser = screen;
 
-                laserVisible = true;
+                lastLaser=screen;
 
-                status.textContent =
+                status.textContent=
                     "🔴 Лазер знайдено";
             }
         }
 
-    } else {
+    }else{
 
-        /*
-           Не стираємо останню точку одразу,
-           щоб маленький лазер не рвав лінію.
-        */
-
-        laserVisible = false;
-
-        status.textContent =
+        status.textContent=
             calibration
             ? "Калібрування OK • шукаю лазер"
             : "Калібрування...";
     }
 
-    requestAnimationFrame(mainLoop);
+
+    requestAnimationFrame(
+        mainLoop
+    );
 }
 
 
-/* ---------------------------------------------------
-   ПЕРЕЗМІР ПОЛОТНА
---------------------------------------------------- */
-
-function resize() {
-
-    draw.width =
-        window.innerWidth;
-
-    draw.height =
-        window.innerHeight;
-}
-
-window.addEventListener(
-    "resize",
-    resize
-);
-
-resize();
+/* =================================================
+   ЗАПУСК
+================================================= */
 
 startCamera();
 
 </script>
 
 </body>
-</html>
+      </html>
